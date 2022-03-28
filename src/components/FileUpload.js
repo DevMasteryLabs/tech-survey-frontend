@@ -3,12 +3,11 @@ import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 
 import Message from './Message';
-import Progress from './Progress';
 
 const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
-  const [uploadPercentage, setUploadPercentage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -29,36 +28,36 @@ const FileUpload = () => {
     formData.append('description', description);
 
     try {
+      setLoading(true);
       const res = await axios.post(`${process.env.REACT_APP_API_URL}/technologies`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: progressEvent => {
-          const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadPercentage(percentage);
         }
       });
 
       const { msg, technology } = res.data;
       console.log(technology);
+      setLoading(false);
       setMessage(msg);
+      setFile(null);
+      setEmail('');
+      setName('');
+      setDescription('');
 
       setTimeout(() => {
-        setFile(null);
         setMessage('');
-        setUploadPercentage(0);
-        setEmail('');
-        setName('');
-        setDescription('');
       }, 5000);
 
     } catch (err) {
       if (err.response.status === 500) {
         setMessage('There was a problem with the server');
       } else {
-        setMessage(err.response.data.msg);
+        setMessage(err.response.data.message);
       }
-      setUploadPercentage(0)
+      setLoading(false);
+      setTimeout(() => {
+        setMessage('');
+      }, 5000);
     }
   };
 
@@ -113,13 +112,21 @@ const FileUpload = () => {
               Browse.. ({file ? file.name : 'Choose File'})
             </Button>
           </div>
-          {uploadPercentage !== 0 && <Progress percentage={uploadPercentage} />}
           <Button 
             variant="primary" 
             type='submit' 
-            className='w-100 mt-3'
+            className='w-100 mt-4 d-flex justify-content-center align-items-center gap-1'
+            disabled={loading}
           >
-            Save
+            {
+              loading 
+                ? (
+                  <Fragment>
+                    <span className='loader'></span> Loading
+                  </Fragment>
+                ) 
+                : 'Save'
+            }
           </Button>
       </form>
         {file && (
